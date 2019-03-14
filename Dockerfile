@@ -14,16 +14,14 @@ yum install -y postgresql11\* --skip-broken;\
 yum install -y maven ;\
 yum install -y git ;\
 yum install -y openssl-devel.x86_64;\
-yum install -y sudo;
+yum install -y sudo;\
+echo "export JAVA_HOME=/usr/lib/jvm/$(ls -l /usr/lib/jvm | grep ^d | awk '{print $9}')" > /root/.bash_profile;\
+export JAVA_HOME=/usr/lib/jvm/$(ls -l /usr/lib/jvm | grep ^d | awk '{print $9}');
 
 #Java Location Tried to by identified dynamically as yum repos keep updated
 #RUN JAVA_HOME=$(update-alternatives --display java | grep point | sed 's?^.* ??' | sed 's/\/jre/:/g' | cut -d ':' -f1);\
 #echo "export JAVA_HOME=$JAVA_HOME" >> ~/.bash_profile;\
 #export JAVA_HOME=$JAVA_HOME;
-
-#Java Location Is Unable To Identified Dynamically, Hence Statically Defined In An Argument and This has to be Revised When repo is Updated..
-#ARG JAVA_HOME="$(update-alternatives --display java | grep point | sed 's?^.* ??' | sed 's/\/jre/:/g' | cut -d ':' -f1);"
-ARG JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.201.b09-2.el7_6.x86_64
 
 #Setting Up Env Variables to persist intermediate containers while docker flow execution.
 ENV PGHOME /usr/pgsql-11
@@ -33,9 +31,7 @@ ENV PGPORT 5432
 ENV PGLOCALEDIR /usr/pgsql-11/share/locale
 ENV MANPATH $MAN_PATH:/usr/pgsql-11/share/man
 ENV PGDATA /var/lib/pgsql/11/data
-ENV JAVA_HOME $JAVA_HOME
-ENV JRE_HOME $JAVA_HOME/jre
-ENV PATH $PATH:$JAVA_HOME/bin:$JRE_HOME/bin:$JRE_HOME/lib/amdb64:$JRE_HOME/lib/amdb64/server:$PGHOME/bin:$PGHOME/lib
+ENV PATH $PATH:$PGHOME/bin:$PGHOME/lib
 
 #Copy The Open SSL rpm seperately to postgres as those will not come along with pg binaries, and these are needed for PLJava Complilation.
 RUN mkdir -p $PGHOME/include;\
@@ -43,8 +39,8 @@ cp -pR /usr/include/openssl/ $PGHOME/include/openssl;\
 chown postgres:postgres -R $PGHOME;\
 
 #Modify The ldconfig File for PLJava
-echo -e "$JAVA_HOME/jre/lib/amd64\n\
-$JAVA_HOME/jre/lib/amd64/server\n\
+echo -e "$(grep JAVA_HOME /root/.bash_profile | cut -d '=' -f2)/jre/lib/amd64\n\
+$(grep JAVA_HOME /root/.bash_profile | cut -d '=' -f2)/jre/lib/amd64/server\n\
 $PGHOME/lib\n"\
 >>/etc/ld.so.conf; \
 
@@ -195,7 +191,7 @@ export PGDATA\n \
 # Use the file below. This is not overridden\n \
 # by the RPMS.\n \
 [ -f /opt/pgsql/.pgsql_profile ] && source /opt/pgsql/.pgsql_profile\n \
-export JAVA_HOME=$JAVA_HOME \n \
+$(grep JAVA_HOME /root/.bash_profile) \n \
 export JRE_HOME=$JAVA_HOME/jre\n \
 export PATH=\$PATH:\$JAVA_HOME/bin:\$JRE_HOME/bin:\$JRE_HOME/lib/amdb64:\$JRE_HOME/lib/amdb64/server:\$PGHOME/bin:\$PGHOME/lib\n" \
 >/var/lib/pgsql/.bash_profile; \
