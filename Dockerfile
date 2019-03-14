@@ -213,5 +213,11 @@ exit
 #Exposing the Docker constainer pg port to Server/Vm's port.
 EXPOSE 5432:5432
 
+#Copying And SettingUp Entrypoint
+COPY docker-entrypoint.sh /var/lib/pgsql/
+RUN ln -s /var/lib/pgsql/docker-entrypoint.sh /; \
+chmod 755 /docker-entrypoint.sh;
+ENTRYPOINT ["/docker-entrypoint.sh"]
+
 #Login Command, as an entrypoint to Docker.
-CMD ["/bin/bash"]
+CMD ["postgres"]
